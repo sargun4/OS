@@ -3,8 +3,11 @@
 ## Loader (loader.c): This is the core part of the program. It reads an ELF executable file, loads it into memory, and executes it. Here's what it does step by step:
 
 a. Opens the ELF executable file you provide.
+
 b. Reads the content of the file into memory (malloc).
+
 c. Parses the ELF header to understand the file's structure.
+
 d. Iterates through the program headers, which describe the memory segments needed by the executable.
 e. Loads these memory segments into the program's memory space using mmap and copies the content from the file.
 f. Finds the entry point of the loaded program and starts executing it.
