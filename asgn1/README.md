@@ -1,18 +1,18 @@
 ## Creating a program that can load and execute 32-bit executable files (ELF format) without using any pre-built libraries for handling ELF files. The program you create will be split into two parts: a "loader" and a "launcher."
 
-# Loader (loader.c): This is the core part of your program. It reads an ELF executable file, loads it into memory, and executes it. Here's what it does step by step:
+## Loader (loader.c): This is the core part of the program. It reads an ELF executable file, loads it into memory, and executes it. Here's what it does step by step:
 
 a. Opens the ELF executable file you provide.
 b. Reads the content of the file into memory (malloc).
 c. Parses the ELF header to understand the file's structure.
 d. Iterates through the program headers, which describe the memory segments needed by the executable.
-e. Loads these memory segments into your program's memory space using mmap and copies the content from the file.
+e. Loads these memory segments into the program's memory space using mmap and copies the content from the file.
 f. Finds the entry point of the loaded program and starts executing it.
 
-# Launcher (launch.c): This part helps you run the loader and load different executable files. It does the following:
+## Launcher (launch.c): This part helps you run the loader and load different executable files. It does the following:
 
 a. Accepts the name of an ELF executable file as a command-line argument.
-b. Dynamically loads the shared library (lib_simpleloader.so) that contains your loader's code.
+b. Dynamically loads the shared library (lib_simpleloader.so) that contains the loader's code.
 c. Gets the function from the shared library that loads and executes the ELF file.
 d. Executes the loader function, which in turn loads and runs the provided ELF executable file.
 e. Cleans up resources after the execution is complete.
