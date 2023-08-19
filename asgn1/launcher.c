@@ -28,6 +28,12 @@
 
 //     return 0;
 // }
+
+// The launch.c program uses dynamic loading (dlopen, dlsym, dlclose) to load the lib_simpleloader.so library at runtime.
+// It obtains function pointers to the load_and_execute and cleanup functions from the loader library using dlsym.
+// The user is expected to provide the ELF file path as a command-line argument when running the launch executable.
+// After loading and executing the ELF file using the loader, the program performs cleanup using the cleanup function.
+// You should compile launch.c with the -m32 flag and link against libdl using -ldl.
 #include <stdio.h>
 #include <dlfcn.h> // For dynamic loading of shared libraries
 #include "loader.h" // Include the header with loader APIs
