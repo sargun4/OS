@@ -1,6 +1,6 @@
 ## Creating a program that can load and execute 32-bit executable files (ELF format) without using any pre-built libraries for handling ELF files. The program we create will be split into two parts: a "loader" and a "launcher."
 
-## Loader (loader.c): This is the core part of the program. It reads an ELF executable file, loads it into memory, and executes it. Here's what it does step by step:
+## Loader (loader.c): It reads an ELF executable file, loads it into memory, and executes it. Here's what it does step by step:
 
 a. Opens the ELF executable file we provide.
 
