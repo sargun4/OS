@@ -14,7 +14,7 @@ e. Loads these memory segments into the program's memory space using mmap and co
 
 f. Finds the entry point of the loaded program and starts executing it.
 
-## Launcher (launch.c): This part helps we run the loader and load different executable files. It does the following:
+## Launcher (launch.c): It does the following:
 
 a. Accepts the name of an ELF executable file as a command-line argument.
 
