@@ -25,5 +25,3 @@ c. Gets the function from the shared library that loads and executes the ELF fil
 d. Executes the loader function, which in turn loads and runs the provided ELF executable file.
 
 e. Cleans up resources after the execution is complete.
-
-In simpler terms, we're creating a special program (the "loader") that can read and understand executable files. Another program (the "launcher") helps we use the loader to run these executable files. The assignment involves writing code for both the loader and the launcher, following specific rules and structures mentioned in the instructions.
