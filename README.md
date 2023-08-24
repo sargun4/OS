@@ -6,7 +6,7 @@
 ## Loader (loader.c): It reads an ELF executable file, loads it into memory, and executes it. step by step explanation:
 a. Opens the ELF executable file we provide.
 
-b. Reads the content of the file into memory (malloc).
+b. Reads the content of the file into memory.
 
 c. Parses the ELF header to understand the file's structure.
 
