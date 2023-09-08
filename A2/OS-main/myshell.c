@@ -40,6 +40,15 @@ void handle_sigchld(int signal) {
         child_exit_status = WEXITSTATUS(status);
     }
 }
+void add_to_history(char* command, pid_t pid) {
+    if (history_count < MAX_HISTORY_SIZE) {
+        strcpy(history[history_count].command, command);
+        history[history_count].timestamp = time(NULL);
+        history[history_count].pid = pid;
+        history[history_count].start_time = time(NULL);
+        history_count++;
+    }
+}
 
 void read_input(char* input) {
     printf("SimpleShell > ");
@@ -47,7 +56,6 @@ void read_input(char* input) {
     fgets(input, MAX_INPUT_LENGTH, stdin);
     input[strlen(input) - 1] = '\0';
 }
-
 int execute_command(char* command) {
     int pipe_fd[2];
     int status;
@@ -65,7 +73,7 @@ int execute_command(char* command) {
 
     if (child_pid == 0) {
         // Child process
-        close(pipe_fd[0]); 
+        close(pipe_fd[0]);
 
         dup2(pipe_fd[1], STDOUT_FILENO);
         close(pipe_fd[1]);
@@ -79,6 +87,8 @@ int execute_command(char* command) {
 
         char line[MAX_INPUT_LENGTH];
         FILE* pipe_read = fdopen(pipe_fd[0], "r");
+
+        add_to_history(command, child_pid);
 
         while (fgets(line, sizeof(line), pipe_read) != NULL) {
             printf("%s", line);
@@ -95,15 +105,6 @@ int execute_command(char* command) {
     }
 }
 
-void add_to_history(char* command, pid_t pid) {
-    if (history_count < MAX_HISTORY_SIZE) {
-        strcpy(history[history_count].command, command);
-        history[history_count].timestamp = time(NULL);
-        history[history_count].pid = pid;
-        history[history_count].start_time = time(NULL);
-        history_count++;
-    }
-}
 
 void show_history() {
     for (int i = 0; i < history_count; i++) {
@@ -114,15 +115,12 @@ void show_history() {
         }
     }
 }
-
 int main() {
     char input[MAX_INPUT_LENGTH];
-    // Register the SIGCHLD signal handler
     signal(SIGCHLD, handle_sigchld);
     do {
         read_input(input);
         if (strcmp(input, "exit") == 0) {
-            // Display details upon termination
             for (int i = 0; i < history_count; i++) {
                 printf("Command: %s\n", history[i].command);
                 printf("Timestamp: %s", asctime(localtime(&history[i].timestamp)));
@@ -134,10 +132,8 @@ int main() {
 
         if (strcmp(input, "history") == 0) {
             show_history();
+            
         } else {
-            pid_t pid = getpid();
-            add_to_history(input, pid);
-            history[history_count - 1].start_time = time(NULL);
             int status = execute_command(input);
             if (status != -1) {
                 history[history_count - 1].end_time = time(NULL);
