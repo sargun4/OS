@@ -81,22 +81,18 @@ Within the loop:
 - example:
 
             SimpleShell > history
-            1: [ls] (Timestamp: Sat Sep  9 03:08:38 2023
+            1: [ls] (Timestamp: Sun Sep 10 13:07:32 2023
             )
-            Process ID: 90935
-            Execution duration: 0 seconds
-            2: [cat fib.c] (Timestamp: Sat Sep  9 03:08:44 2023
+            Process ID: 7639
+            Execution duration: 1013 microseconds
+            2: [cat fib.c] (Timestamp: Sun Sep 10 13:07:35 2023
             )
-            Process ID: 90985
-            Execution duration: 0 seconds
-            3: [cat fib.c|wc -l] (Timestamp: Sat Sep  9 03:08:51 2023
+            Process ID: 7653
+            Execution duration: 2090 microseconds
+            3: [grep pr fib.c] (Timestamp: Sun Sep 10 13:07:40 2023
             )
-            Process ID: 91010
-            Execution duration: 0 seconds
-            4: [cat fib.c|wc -c] (Timestamp: Sat Sep  9 03:09:00 2023
-            )
-            Process ID: 91077
-            Execution duration: 0 seconds
+            Process ID: 7682
+            Execution duration: 2197 microseconds
 
 Summary:
 
