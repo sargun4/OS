@@ -29,13 +29,13 @@ https://docs.google.com/document/d/1UOWEj1oHgfoPr0y4Kv44gjTCzD0oeEwdcgWfyIH7AKU/
 - pid: A pid_t variable to store the process ID (PID) of the executed command.
 - start_time: A struct timeval variable to store the start time of command execution with microsecond precision.
 - end_time: A struct timeval variable to store the end time of command execution with microsecond precision.
+  
+### 4.time_diff
 
-### 2. Signal Handling (handle_sigchld):
-
-- This signal handler is triggered when a child process terminates.
-- It uses waitpid() with the WNOHANG option to check for the termination of child processes without blocking.
-- When a child process terminates, it updates child_exit_status to store the exit status of the child process.
-- It also iterates through the history array to find the corresponding entry for the terminated child process and updates its end_time field.
+- struct timeval stores time in two components: tv_sec (seconds) and tv_usec (microseconds).
+- start_time is computed by multiplying start.tv_sec (seconds) by 1,000,000 to convert it to microseconds and adding start.tv_usec (microseconds).
+- Similarly, end_time is computed by multiplying end.tv_sec (seconds) by 1,000,000 and adding end.tv_usec (microseconds).
+- The difference between end_time and start_time is then calculated and returned, representing the time difference in microseconds.
 
 ### 3. Reading User Input (read_input):
 
