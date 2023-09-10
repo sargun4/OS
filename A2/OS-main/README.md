@@ -16,18 +16,19 @@ https://docs.google.com/document/d/1UOWEj1oHgfoPr0y4Kv44gjTCzD0oeEwdcgWfyIH7AKU/
 - The struct CommandHistory structure is used to store information about executed commands. It has the following fields:
             
                 struct CommandHistory {
-                    char command[MAX_INPUT_LENGTH];
-                    time_t timestamp;
-                    pid_t pid;
-                    time_t start_time;
-                    time_t end_time;
-                };
+                char command[MAX_INPUT_LENGTH];
+                time_t timestamp;
+                pid_t pid;
+                struct timeval start_time;
+                struct timeval end_time;
+            };
+
                 
-- command: A character array to store the command itself.
-timestamp: A time_t variable to store the timestamp of when the command was executed.
+- command: A character array to store the executed command itself.
+- timestamp: A time_t variable to store the timestamp of when the command was executed.
 - pid: A pid_t variable to store the process ID (PID) of the executed command.
-- start_time: A time_t variable to store the start time of command execution.
-- end_time: A time_t variable to store the end time of command execution.
+- start_time: A struct timeval variable to store the start time of command execution with microsecond precision.
+- end_time: A struct timeval variable to store the end time of command execution with microsecond precision.
 
 ### 2. Signal Handling (handle_sigchld):
 
