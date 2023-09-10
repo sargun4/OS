@@ -69,7 +69,6 @@ https://docs.google.com/document/d/1UOWEj1oHgfoPr0y4Kv44gjTCzD0oeEwdcgWfyIH7AKU/
 ### 7. Main Loop:
 
 - The main function is the entry point for the shell program.
-- It registers the SIGCHLD signal handler to handle child process termination.
 - It enters a loop to read and execute user commands until the user decides to exit.
 Within the loop:
 - It reads user input using read_input.
@@ -94,6 +93,19 @@ Within the loop:
             )
             Process ID: 7682
             Execution duration: 2197 microseconds
+### Checking Background Processes (check_background_processes):
+
+The check_background_processes function is responsible for checking the status of background processes and updating their is_finished flag accordingly.
+
+It displays information about running or completed background processes, including the command and PID.
+
+### Executing Commands from a File (execute_file):
+
+The execute_file function allows the user to specify a filename and executes commands from that file.
+
+It handles background execution for commands ending with &.
+
+It provides options to execute the "exit" command to display the command history, check background processes using "check bgp," and display the command history using "history."
 
 Summary:
 
