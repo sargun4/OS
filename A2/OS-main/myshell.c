@@ -13,7 +13,8 @@
 
 volatile sig_atomic_t child_exit_status = 0;
 
-struct CommandHistory {
+struct CommandHistory
+{
     char command[MAX_INPUT_LENGTH];
     time_t timestamp;
     pid_t pid;
@@ -21,21 +22,33 @@ struct CommandHistory {
     struct timeval end_time;
 };
 
+struct BackgroundProcesses
+{
+    char command[MAX_INPUT_LENGTH];
+    pid_t pid;
+    int is_finished;
+};
+
 struct CommandHistory history[MAX_HISTORY_SIZE];
+struct BackgroundProcesses background_history[MAX_HISTORY_SIZE];
+
 int history_count = 0;
+int background_history_count = 0;
 
-
-long long time_diff(struct timeval start, struct timeval end) {
+long long time_diff(struct timeval start, struct timeval end)
+{
     long long start_time = start.tv_sec * 1000000LL + start.tv_usec;
     long long end_time = end.tv_sec * 1000000LL + end.tv_usec;
-    return end_time - start_time; //time diff in microsecs
+    return end_time - start_time; // time diff in microsecs
 }
 
-void read_input(char* input) {
-    printf("SimpleShell > ");
+void read_input(char *input)
+{
+    printf("User@DESKTOP:~$ ");
     fflush(stdout);
 
-    if (fgets(input, MAX_INPUT_LENGTH, stdin) == NULL) {
+    if (fgets(input, MAX_INPUT_LENGTH, stdin) == NULL)
+    {
         perror("fgets failed");
         exit(EXIT_FAILURE);
     }
@@ -43,97 +56,304 @@ void read_input(char* input) {
     input[strlen(input) - 1] = '\0';
 }
 
-int execute_command(char* command) {
-    int pipe_fd[2];
-    int status;
-    pid_t child_pid;
+int read_from_file(char *input, FILE *fptr)
+{
+    fflush(stdout);
 
-    if (pipe(pipe_fd) == -1) {
-        perror("Pipe failed");
-        return -1;
+    if (fgets(input, MAX_INPUT_LENGTH, fptr) == NULL)
+    {
+        if (feof(fptr))
+        {
+            return 0;
+        }
+
+        else
+        {
+            perror("fgets failed");
+            exit(EXIT_FAILURE);
+        }
     }
 
-    if ((child_pid = fork()) == -1) {
-        perror("Fork failed");
-        return -1;
+    if (input[strlen(input) - 1] == '\n')
+    {
+        input[strlen(input) - 1] = '\0';
     }
 
-    if (child_pid == 0) {
-        close(pipe_fd[0]);
+    return 1;
+}
 
-        dup2(pipe_fd[1], STDOUT_FILENO);
-        close(pipe_fd[1]);
+int execute_command(char *command, int background)
+{
+    if (background == 0)
+    {
+        int pipe_fd[2];
+        int status;
+        pid_t child_pid;
 
-        execlp("sh", "sh", "-c", command, NULL);
-
-        // Exec failed
-        perror("Exec failed");
-        exit(EXIT_FAILURE);
-    } else {
-        close(pipe_fd[1]);
-
-        char line[MAX_INPUT_LENGTH];
-        FILE* pipe_read = fdopen(pipe_fd[0], "r");
-
-        struct CommandHistory new_entry;
-        strcpy(new_entry.command, command);
-        new_entry.timestamp = time(NULL);
-        new_entry.pid = child_pid;
-        gettimeofday(&new_entry.start_time, NULL);
-
-        if (history_count < MAX_HISTORY_SIZE) {
-            history[history_count++] = new_entry;
-        }
-
-        while (fgets(line, sizeof(line), pipe_read) != NULL) {
-            printf("%s", line);
-        }
-
-        if (fclose(pipe_read) == EOF) {
-            perror("fclose failed");
-        }
-
-        waitpid(child_pid, &status, 0);
-        gettimeofday(&history[history_count - 1].end_time, NULL);
-
-        if (WIFEXITED(status)) {
-            return WEXITSTATUS(status);
-        } else {
+        if (pipe(pipe_fd) == -1)
+        {
+            perror("Pipe failed");
             return -1;
+        }
+
+        if ((child_pid = fork()) == -1)
+        {
+            perror("Fork failed");
+            return -1;
+        }
+
+        if (child_pid == 0)
+        {
+            close(pipe_fd[0]);
+
+            dup2(pipe_fd[1], STDOUT_FILENO);
+            close(pipe_fd[1]);
+
+            execlp("sh", "sh", "-c", command, NULL);
+
+            // Exec failed
+            perror("Exec failed");
+            exit(EXIT_FAILURE);
+        }
+
+        else
+        {
+            close(pipe_fd[1]);
+
+            char line[MAX_INPUT_LENGTH];
+            FILE *pipe_read = fdopen(pipe_fd[0], "r");
+
+            struct CommandHistory new_entry;
+            strcpy(new_entry.command, command);
+            new_entry.timestamp = time(NULL);
+            new_entry.pid = child_pid;
+            gettimeofday(&new_entry.start_time, NULL);
+
+            if (history_count < MAX_HISTORY_SIZE)
+            {
+                history[history_count++] = new_entry;
+            }
+
+            while (fgets(line, sizeof(line), pipe_read) != NULL)
+            {
+                printf("%s", line);
+            }
+
+            if (fclose(pipe_read) == EOF)
+            {
+                perror("fclose failed");
+            }
+
+            waitpid(child_pid, &status, 0);
+            gettimeofday(&history[history_count - 1].end_time, NULL);
+
+            if (WIFEXITED(status))
+            {
+                return WEXITSTATUS(status);
+            }
+
+            else
+            {
+                return -1;
+            }
+        }
+    }
+
+    else if (background == 1)
+    {
+        int status;
+        pid_t child_pid;
+
+        if ((child_pid = fork()) == -1)
+        {
+            perror("Fork failed");
+            return -1;
+        }
+
+        if (child_pid == 0)
+        {
+            execlp("sh", "sh", "-c", command, NULL);
+
+            // Exec failed
+            perror("Exec failed");
+            exit(EXIT_FAILURE);
+        }
+
+        else
+        {
+            struct BackgroundProcesses new_entry;
+            strcpy(new_entry.command, command);
+            new_entry.pid = child_pid;
+
+            if (background_history_count < MAX_HISTORY_SIZE)
+            {
+                background_history[background_history_count++] = new_entry;
+            }
+
+            printf("Process running in background (PID: %d)\n", child_pid);
+            return 0;
         }
     }
 }
 
-void show_history() {
-    for (int i = 0; i < history_count; i++) {
+void show_history()
+{
+    for (int i = 0; i < history_count; i++)
+    {
         printf("%d: [%s] (Timestamp: %s)\n", i + 1, history[i].command, asctime(localtime(&history[i].timestamp)));
         printf("Process ID: %d\n", history[i].pid);
         printf("Execution duration: %lld microseconds\n", time_diff(history[i].start_time, history[i].end_time));
     }
 }
 
-int main() {
+void check_background_processes()
+{
+    for (int i = 0; i < background_history_count; i++)
+    {
+        pid_t pid = background_history[i].pid;
+        int status;
+
+        if (waitpid(pid, &status, WNOHANG) > 0)
+        {
+            background_history[i].is_finished = 1;
+        }
+    }
+
+    for (int i = 0; i < background_history_count; i++)
+    {
+        printf("%d: [%s]\n", i + 1, background_history[i].command);
+        printf("Process ID: %d\n", background_history[i].pid);
+
+        if (background_history->is_finished)
+            printf("Process Completed\n");
+
+        else
+            printf("Process Running\n");
+    }
+}
+
+int execute_file()
+{
+    FILE *fptr;
+
+    char fname[MAX_INPUT_LENGTH];
+    printf("Enter the file name: ");
+    fgets(fname, MAX_INPUT_LENGTH, stdin);
+    fname[strlen(fname) - 1] = '\0';
+
+    fptr = fopen(fname, "r");
+
+    if (fptr == NULL)
+    {
+        perror("fopen failed");
+        exit(0);
+    }
+
     char input[MAX_INPUT_LENGTH];
-    do {
-        read_input(input);
-        if (strcmp(input, "exit") == 0) {
+    int background = 0;
+
+    while (read_from_file(input, fptr))
+    {
+        if ((input[strlen(input) - 1] == '&') && (input[strlen(input) - 2] == ' '))
+        {
+            input[strlen(input) - 2] = '\0';
+            background = 1;
+        }
+
+        else
+            background = 0;
+
+        if (strcmp(input, "exit") == 0)
+        {
             show_history();
             break;
         }
 
-        if (strcmp(input, "history") == 0) {
+        else if (strcmp(input, "check bgp") == 0)
+        {
+            check_background_processes();
+        }
+
+        else if (strcmp(input, "history") == 0)
+        {
             show_history();
-        } else {
-            int status = execute_command(input);
-            if (status != -1) {
+        }
+
+        else
+        {
+            int status = execute_command(input, background);
+            if (status != -1)
+            {
                 printf("Exit status: %d\n", status);
-            } else {
+            }
+            else
+            {
+                perror("Command execution failed");
+            }
+        }
+    }
+
+    fclose(fptr);
+    printf("File executed Successfully!\n");
+    return 0;
+}
+
+int main()
+{
+    char input[MAX_INPUT_LENGTH];
+    int background = 0;
+
+    do
+    {
+        read_input(input);
+
+        if ((input[strlen(input) - 1] == '&') && (input[strlen(input) - 2] == ' '))
+        {
+            input[strlen(input) - 2] = '\0';
+            background = 1;
+        }
+
+        else
+            background = 0;
+
+        if (strcmp(input, "exit") == 0)
+        {
+            show_history();
+            break;
+        }
+
+        else if (strcmp(input, "execute file") == 0)
+        {
+            execute_file();
+        }
+
+        else if (strcmp(input, "check bgp") == 0)
+        {
+            check_background_processes();
+        }
+
+        else if (strcmp(input, "history") == 0)
+        {
+            show_history();
+        }
+
+        else
+        {
+            int status = execute_command(input, background);
+            if (status != -1)
+            {
+                printf("Exit status: %d\n", status);
+            }
+            else
+            {
                 perror("Command execution failed");
             }
         }
     } while (1);
     return 0;
 }
+
+
 
 // #include <stdio.h>
 // #include <stdlib.h>
@@ -142,6 +362,7 @@ int main() {
 // #include <sys/types.h>
 // #include <sys/wait.h>
 // #include <signal.h>
+// #include <sys/time.h>
 // #include <time.h>
 
 // #define MAX_INPUT_LENGTH 1024
@@ -153,46 +374,32 @@ int main() {
 //     char command[MAX_INPUT_LENGTH];
 //     time_t timestamp;
 //     pid_t pid;
-//     time_t start_time;
-//     time_t end_time;
+//     struct timeval start_time;
+//     struct timeval end_time;
 // };
 
 // struct CommandHistory history[MAX_HISTORY_SIZE];
 // int history_count = 0;
 
-// void handle_sigchld(int signal) {
-//     int status;
-//     pid_t pid;
 
-//     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-//         for (int i = 0; i < history_count; i++) {
-//             if (history[i].pid == pid) {
-//                 history[i].end_time = time(NULL); 
-//                 break;
-//             }
-//         }
-//     }
-
-//     if (WIFEXITED(status)) {
-//         child_exit_status = WEXITSTATUS(status);
-//     }
-// }
-// void add_to_history(char* command, pid_t pid) {
-//     if (history_count < MAX_HISTORY_SIZE) {
-//         strcpy(history[history_count].command, command);
-//         history[history_count].timestamp = time(NULL);
-//         history[history_count].pid = pid;
-//         history[history_count].start_time = time(NULL);
-//         history_count++;
-//     }
+// long long time_diff(struct timeval start, struct timeval end) {
+//     long long start_time = start.tv_sec * 1000000LL + start.tv_usec;
+//     long long end_time = end.tv_sec * 1000000LL + end.tv_usec;
+//     return end_time - start_time; //time diff in microsecs
 // }
 
 // void read_input(char* input) {
 //     printf("SimpleShell > ");
 //     fflush(stdout);
-//     fgets(input, MAX_INPUT_LENGTH, stdin);
+
+//     if (fgets(input, MAX_INPUT_LENGTH, stdin) == NULL) {
+//         perror("fgets failed");
+//         exit(EXIT_FAILURE);
+//     }
+
 //     input[strlen(input) - 1] = '\0';
 // }
+
 // int execute_command(char* command) {
 //     int pipe_fd[2];
 //     int status;
@@ -209,31 +416,43 @@ int main() {
 //     }
 
 //     if (child_pid == 0) {
-//         // Child process
 //         close(pipe_fd[0]);
 
 //         dup2(pipe_fd[1], STDOUT_FILENO);
 //         close(pipe_fd[1]);
 
 //         execlp("sh", "sh", "-c", command, NULL);
+
+//         // Exec failed
 //         perror("Exec failed");
 //         exit(EXIT_FAILURE);
 //     } else {
-//         // Parent process
-//         close(pipe_fd[1]); 
+//         close(pipe_fd[1]);
 
 //         char line[MAX_INPUT_LENGTH];
 //         FILE* pipe_read = fdopen(pipe_fd[0], "r");
 
-//         add_to_history(command, child_pid);
+//         struct CommandHistory new_entry;
+//         strcpy(new_entry.command, command);
+//         new_entry.timestamp = time(NULL);
+//         new_entry.pid = child_pid;
+//         gettimeofday(&new_entry.start_time, NULL);
+
+//         if (history_count < MAX_HISTORY_SIZE) {
+//             history[history_count++] = new_entry;
+//         }
 
 //         while (fgets(line, sizeof(line), pipe_read) != NULL) {
 //             printf("%s", line);
 //         }
 
-//         fclose(pipe_read);
+//         if (fclose(pipe_read) == EOF) {
+//             perror("fclose failed");
+//         }
 
 //         waitpid(child_pid, &status, 0);
+//         gettimeofday(&history[history_count - 1].end_time, NULL);
+
 //         if (WIFEXITED(status)) {
 //             return WEXITSTATUS(status);
 //         } else {
@@ -242,43 +461,33 @@ int main() {
 //     }
 // }
 
-
 // void show_history() {
 //     for (int i = 0; i < history_count; i++) {
-//         if (history[i].end_time > 0) {
-//             printf("%d: [%s] (Timestamp: %s)\n", i + 1, history[i].command, asctime(localtime(&history[i].timestamp)));
-//             printf("Process ID: %d\n", history[i].pid);
-//             printf("Execution duration: %ld seconds\n", history[i].end_time - history[i].start_time);
-//         }
+//         printf("%d: [%s] (Timestamp: %s)\n", i + 1, history[i].command, asctime(localtime(&history[i].timestamp)));
+//         printf("Process ID: %d\n", history[i].pid);
+//         printf("Execution duration: %lld microseconds\n", time_diff(history[i].start_time, history[i].end_time));
 //     }
 // }
+
 // int main() {
 //     char input[MAX_INPUT_LENGTH];
-//     signal(SIGCHLD, handle_sigchld);
 //     do {
 //         read_input(input);
 //         if (strcmp(input, "exit") == 0) {
-//             for (int i = 0; i < history_count; i++) {
-//                 printf("Command: %s\n", history[i].command);
-//                 printf("Timestamp: %s", asctime(localtime(&history[i].timestamp)));
-//                 printf("Process ID: %d\n", history[i].pid);
-//                 printf("Execution duration: %ld seconds\n", history[i].end_time - history[i].start_time);
-//             }
+//             show_history();
 //             break;
 //         }
 
 //         if (strcmp(input, "history") == 0) {
 //             show_history();
-            
 //         } else {
 //             int status = execute_command(input);
 //             if (status != -1) {
-//                 history[history_count - 1].end_time = time(NULL);
 //                 printf("Exit status: %d\n", status);
+//             } else {
+//                 perror("Command execution failed");
 //             }
 //         }
 //     } while (1);
 //     return 0;
 // }
-
-
