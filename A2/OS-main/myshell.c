@@ -25,7 +25,7 @@ struct CommandHistory history[MAX_HISTORY_SIZE];
 int history_count = 0;
 
 
-long long time_difference_us(struct timeval start, struct timeval end) {
+long long time_diff(struct timeval start, struct timeval end) {
     long long start_time = start.tv_sec * 1000000LL + start.tv_usec;
     long long end_time = end.tv_sec * 1000000LL + end.tv_usec;
     return end_time - start_time; //time diff in microsecs
@@ -108,7 +108,7 @@ void show_history() {
     for (int i = 0; i < history_count; i++) {
         printf("%d: [%s] (Timestamp: %s)\n", i + 1, history[i].command, asctime(localtime(&history[i].timestamp)));
         printf("Process ID: %d\n", history[i].pid);
-        printf("Execution duration: %lld microseconds\n", time_difference_us(history[i].start_time, history[i].end_time));
+        printf("Execution duration: %lld microseconds\n", time_diff(history[i].start_time, history[i].end_time));
     }
 }
 
