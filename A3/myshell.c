@@ -385,7 +385,7 @@ int main(int argc, char const *argv[])
         if (strcmp(input, "exit") == 0)
         {
             show_history();
-            kill(scheduler_pid, SIGINT);
+            kill(scheduler_pid, SIGTERM);
 
             int status;
             waitpid(scheduler_pid, &status, 0);
