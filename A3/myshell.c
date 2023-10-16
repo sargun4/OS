@@ -369,7 +369,7 @@ int main(int argc, char const *argv[])
         if (strcmp(input, "begin") == 0)
         {
             printf("check\n");
-            kill(scheduler_pid, SIGUSR2);
+            kill(scheduler_pid, SIGUSR1);
             continue;
         }
 
@@ -386,6 +386,9 @@ int main(int argc, char const *argv[])
         {
             show_history();
             kill(scheduler_pid, SIGINT);
+
+            int status;
+            waitpid(scheduler_pid, &status, 0);
             break;
         }
 
