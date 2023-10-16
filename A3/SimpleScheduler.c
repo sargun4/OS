@@ -84,7 +84,6 @@ void custom_signal_handler(int signo)
 {
 
     printf("Custom signal %d received.\n", signo);
-    // Handle the custom signal as needed
 
     if (signo == SIGUSR2)
     {
@@ -164,6 +163,22 @@ void custom_signal_handler(int signo)
         }
     }
 
+    else if (signo == SIGTERM)
+    {
+
+        printf("\n");
+        printf("Scheduling History: \n\n");
+
+        for (int i = 0; i < shared_queues->finished_queue_size; i++)
+        {
+            process process = shared_queues->finished_queue[i];
+            printf("Name: %s\nPID: %d\nPriority: %d\nExecution Time: %d\nWaiting Time: %d\n\n", process.name, process.pid, process.priority, process.execution_time, process.waiting_time);
+        }
+
+        cleanup();
+        exit(0);
+    }
+
     else if (signo == SIGALRM)
     {
         kill(getpid(), SIGUSR2);
@@ -204,35 +219,14 @@ void custom_signal_handler(int signo)
 
         kill(getpid(), SIGUSR2);
     }
-
-    else if (signo == SIGINT)
-    {
-        printf("\n");
-        printf("Scheduling History: \n\n");
-
-        for (int i = 0; i < shared_queues->finished_queue_size; i++)
-        {
-            process process = shared_queues->finished_queue[i];
-            printf("Name: %s\nPID: %d\nPriority: %d\nExecution Time: %d\nWaiting Time: %d\n\n", process.name, process.pid, process.priority, process.execution_time, process.waiting_time);
-        }
-
-        cleanup();
-        exit(0);
-    }
 }
 
 int main(int argc, char const *argv[])
 {
-    // struct sigaction sig;
-    // memset(&sig, 0, sizeof(sig));
-    // sig.sa_handler = custom_signal_handler;
-    // sigaction(SIGUSR2, &sig, NULL);
-    // sigaction(SIGALRM, &sig, NULL);
-    // sigaction(SIGUSR1, &sig, NULL);
-
     signal(SIGUSR1, custom_signal_handler);
     signal(SIGUSR2, custom_signal_handler);
     signal(SIGALRM, custom_signal_handler);
+    signal(SIGTERM, custom_signal_handler);
 
     NCPU = atoi(argv[1]);
     TSLICE = atoi(argv[2]);
@@ -247,7 +241,6 @@ int main(int argc, char const *argv[])
 
     while (1)
     {
-        // wth
     }
 
     return 0;
