@@ -88,8 +88,7 @@ void custom_signal_handler(int signo)
 
     if (signo == SIGUSR2)
     {
-
-        if (&(shared_queues->running_queue_size) > 0)
+        if (shared_queues->running_queue_size > 0)
         {
             for (int i = 0; i < NCPU; i++)
             {
@@ -135,12 +134,14 @@ void custom_signal_handler(int signo)
             {
                 for (int i = 0; i < NCPU; i++)
                 {
+                    sem_wait(&((shared_queues->mutex)));
                     process process = return_max(shared_queues->waiting_queue, &(shared_queues->waiting_queue_size));
 
                     kill(process.pid, SIGCONT);
 
                     insert(shared_queues->running_queue, &(shared_queues->running_queue_size), process);
                     process.execution_time = process.execution_time + TSLICE;
+                    sem_post(&(shared_queues->mutex));
                 }
             }
 
@@ -148,12 +149,14 @@ void custom_signal_handler(int signo)
             {
                 for (int i = 0; i < shared_queues->waiting_queue_size; i++)
                 {
+                    sem_wait(&((shared_queues->mutex)));
                     process process = return_max(shared_queues->waiting_queue, &(shared_queues->waiting_queue_size));
 
                     kill(process.pid, SIGCONT);
 
                     insert(shared_queues->running_queue, &(shared_queues->running_queue_size), process);
                     process.execution_time = process.execution_time + TSLICE;
+                    sem_post(&(shared_queues->mutex));
                 }
             }
 
@@ -190,6 +193,8 @@ void custom_signal_handler(int signo)
                 char path[] = "./";
                 strcat(path, shared_queues->waiting_queue[i].name);
 
+                kill(child_pid, SIGSTOP);
+
                 execl(path, shared_queues->waiting_queue[i].name, NULL);
 
                 perror("execl");
@@ -197,7 +202,7 @@ void custom_signal_handler(int signo)
             }
         }
 
-        ualarm(TSLICE * 1000, 0);
+        kill(getpid(), SIGUSR2);
     }
 
     else if (signo == SIGINT)
@@ -233,6 +238,12 @@ int main(int argc, char const *argv[])
     TSLICE = atoi(argv[2]);
 
     initialize_shared_queues();
+
+    sem_wait(&((shared_queues->mutex)));
+    shared_queues->finished_queue_size = 0;
+    shared_queues->waiting_queue_size = 0;
+    shared_queues->running_queue_size = 0;
+    sem_post(&(shared_queues->mutex));
 
     while (1)
     {
